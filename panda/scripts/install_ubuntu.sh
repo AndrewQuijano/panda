@@ -27,6 +27,7 @@ git --help &>/dev/null || $SUDO apt-get -qq update && $SUDO apt-get -qq install 
 # some globals
 LIBOSI_VERSION="0.1.7"
 UBUNTU_VERSION=$(lsb_release -r | awk '{print $2}')
+CAPSTONE_VERSION="5.0.4"
 PANDA_GIT="https://github.com/panda-re/panda.git"
 
 # system information
@@ -110,10 +111,9 @@ fi
 if [[ !$(ldconfig -p | grep -q libcapstone.so.5) ]]; then
   echo "Installing libcapstone v5"
   pushd /tmp && \
-  git clone https://github.com/capstone-engine/capstone/ -b v5 && \
-  cd capstone/ && MAKE_JOBS=$(nproc) ./make.sh && $SUDO make install && cd /tmp && \
-  rm -rf /tmp/capstone
-  $SUDO ldconfig
+  curl -LJO https://github.com/panda-re/libosi/releases/download/${CAPSTONE_VERSION}/capstone.deb && \\
+  dpkg -i ./capstone.deb && \\
+  rm -rf /tmp/capstone.deb
   popd
 fi
 

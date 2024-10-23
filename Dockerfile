@@ -1,6 +1,7 @@
 ARG BASE_IMAGE="ubuntu:20.04"
 ARG TARGET_LIST="x86_64-softmmu,i386-softmmu,arm-softmmu,aarch64-softmmu,ppc-softmmu,mips-softmmu,mipsel-softmmu,mips64-softmmu"
 ARG LIBOSI_VERSION="v0.1.7"
+ARG CAPSTONE_VERSION="5.0.4"
 
 ### BASE IMAGE
 FROM $BASE_IMAGE as base
@@ -39,6 +40,11 @@ RUN cd /tmp && \
     git clone https://github.com/capstone-engine/capstone/ -b v5 && \
     cd capstone/ && ./make.sh && make install && cd /tmp && \
     rm -rf /tmp/capstone && ldconfig
+
+RUN cd /tmp && \
+    curl -LJO https://github.com/panda-re/libosi/releases/download/${CAPSTONE_VERSION}/capstone.deb && \\
+    dpkg -i ./capstone.deb && \\
+    rm -rf /tmp/capstone.deb
 
 ENV PATH="/root/.cargo/bin:${PATH}"
 
