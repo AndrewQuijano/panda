@@ -25,7 +25,6 @@ lsb_release --help &>/dev/null || $SUDO apt-get update -qq && $SUDO apt-get -qq 
 git --help &>/dev/null || $SUDO apt-get -qq update && $SUDO apt-get -qq install -y --no-install-recommends git
 
 # some globals
-LIBOSI_VERSION="0.1.7"
 UBUNTU_VERSION=$(lsb_release -r | awk '{print $2}')
 PANDA_GIT="https://github.com/panda-re/panda.git"
 
@@ -68,15 +67,6 @@ progress "Installing PANDA dependencies..."
 # Read file in dependencies directory and install those. If no dependency file present, error
 $SUDO apt-get update
 
-# Ubuntu 18 does not have llvm11/clang11 in apt
-if [ $version -eq 18 ]; then
-  echo "Installing PPA for llvm/clang-11 on Ubuntu 18"
-  $SUDO apt-get -y install software-properties-common
-  $SUDO add-apt-repository -y ppa:savoury1/llvm-defaults-11
-  $SUDO apt-get update
-fi
-
-
 # Dependencies are for a major version, but the filenames include minor versions
 # So take our major version, find the first match in dependencies directory and run with it.
 # This will give us "./panda/dependencies/ubuntu:20.04" where ubuntu:20.04_build.txt or 20.04_base.txt exists
@@ -84,7 +74,7 @@ dep_base=$(find ./panda/dependencies/ubuntu_${version}.* -print -quit | sed  -e 
 
 if [ -e ${dep_base}_build.txt ] || [ -e ${dep_base}_base.txt ]; then
   echo "Found dependency file(s) at ${dep_base}*.txt"
-  DEBIAN_FRONTEND=noninteractive $SUDO apt-get -y install --no-install-recommends $(cat ${dep_base}*.txt | grep -o '^[^#]*')  
+  DEBIAN_FRONTEND=noninteractive $SUDO apt-get -y install --no-install-recommends jq $(cat ${dep_base}*.txt | grep -o '^[^#]*')  
 else
   echo "Unsupported Ubuntu version: $version. Create a list of build dependencies in ${dep_base}_{base,build}.txt and try again."
   exit 1
@@ -95,16 +85,6 @@ curl https://sh.rustup.rs -sSf | sh -s -- -y
 
 # Expose cargo to the running shell/env
 . $HOME/.cargo/env
-
-# Because libz3-dev for Ubuntu 18 is really old, we download and install z3 github release v-4.8.7
-if [ "$version" -eq 18 ]; then
-  echo "Installing z3 on Ubuntu 18"
-  wget https://github.com/Z3Prover/z3/releases/download/z3-4.8.7/z3-4.8.7-x64-ubuntu-16.04.zip -O z3-4.8.7-x64-ubuntu-16.04.zip
-  unzip z3-4.8.7-x64-ubuntu-16.04.zip
-  $SUDO cp -r z3-4.8.7-x64-ubuntu-16.04/* /usr/local/
-  rm -rf z3-4.8.7-x64-ubuntu-16.04
-  rm z3-4.8.7-x64-ubuntu-16.04.zip
-fi
 
 # Install libcapstone v5 release if it's not present
 if [[ !$(ldconfig -p | grep -q libcapstone.so.5) ]]; then
@@ -118,18 +98,14 @@ if [[ !$(ldconfig -p | grep -q libcapstone.so.5) ]]; then
 fi
 
 # if the windows introspection library is not installed, clone and install
+LIBOSI_VERSION=$(curl -s https://api.github.com/repos/panda-re/libosi/releases/latest | jq -r .tag_name)
 if [[ !$(dpkg -l | grep -q libosi) ]]; then
   pushd /tmp
-  curl -LJO https://github.com/panda-re/libosi/releases/download/v${LIBOSI_VERSION}/libosi_${UBUNTU_VERSION}.deb 
+  curl -LJO https://github.com/panda-re/libosi/releases/download/${LIBOSI_VERSION}/libosi_${UBUNTU_VERSION}.deb
   $SUDO dpkg -i /tmp/libosi_${UBUNTU_VERSION}.deb
   rm -rf /tmp/libosi_${UBUNTU_VERSION}.deb
   popd
 fi
-
-# PyPANDA needs CFFI from pip (the version in apt is too old)
-# Install system-wide since PyPANDA install will also be system-wide
-$SUDO python3 -m pip install pip
-$SUDO python3 -m pip install "cffi>1.14.3"
 
 progress "Trying to update DTC submodule"
 git submodule update --init dtc || true
@@ -138,6 +114,11 @@ if [ -d "build" ]; then
   progress "Removing build directory."
   rm -rf "build"
 fi
+
+# PyPANDA needs CFFI from pip (the version in apt is too old)
+# Install system-wide since PyPANDA install will also be system-wide
+$SUDO python3 -m pip install --upgrade --no-cache-dir pip
+$SUDO python3 -m pip install -r ./panda/python/core/requirements.txt
 
 progress "Building PANDA..."
 mkdir build

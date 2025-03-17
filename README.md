@@ -56,10 +56,10 @@ $ docker run --rm pandadev panda-system-i386 --help
 ```
 
 ### Quickstart: Python pip
-The Python interface to PANDA (also known as *pypanda*) can be installed from [PIP](https://pypi.org/project/pandare/) by running `pip3 install pandare`. This will install everything you need for python-based PANDA analyses, but not stand-alone PANDA binaries. The distributed binaries are only tested on 64-bit Ubuntu 18.04 and other architectures/versions are unlikely to work. You can also install pypanda by building PANDA and then running `python3 setup.py install` from the directory `panda/panda/python/core`.
+The Python interface to PANDA (also known as *pypanda*) can be installed from [PIP](https://pypi.org/project/pandare/) by running `pip3 install pandare`. This will install everything you need for python-based PANDA analyses, but not stand-alone PANDA binaries. The distributed binaries are only tested on 64-bit Ubuntu 18.04 and other architectures/versions are likely to work. You can also install pypanda by building PANDA and then running `pip install .` from the directory `panda/panda/python/core`.
 
 ###  Debian, Ubuntu
-The fastest way to install PANDA would be through installing [the debian packages](https://github.com/pandare/panda/releases).
+The fastest way to install PANDA would be through installing [the debian packages](https://github.com/panda-re/panda/releases).
 There is a debian package for both Ubuntu 20.04 and Ubuntu 22.04, and its corresponding PyPanda package.
 Because PANDA has a few dependencies, we've encoded the build instructions into
 the [install\_ubuntu.sh](panda/scripts/install\_ubuntu.sh). The script should
