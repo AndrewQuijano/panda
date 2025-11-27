@@ -1534,7 +1534,7 @@ void __dwarf_type_iter (CPUState *cpu, target_ulong base_addr, LocType loc_t,
     return;
 }
 
-const char * dwarf2_type_to_string (DwarfVarType *var_ty) {
+const char * dwarf2_type_to_string(DwarfVarType *var_ty) {
     std::string argname;
     DwarfTypeInfo *ty = var_ty->type;
     std::string type_name = var_ty->nodename;
@@ -1651,7 +1651,7 @@ void load_func_info(const char *dbg_prefix,
                     }
                 }
             } else {
-                printf("[dwarf2] Could not find start of function [%s] in line number table something went wrong\n", die_name.c_str());
+                dprintf("[dwarf2] Could not find start of function [%s] in line number table something went wrong\n", die_name.c_str());
             }
 
             // this is if we want the start of the function to be one PAST the line that represents start of function
@@ -1739,7 +1739,9 @@ void load_type_info(const char *dbg_prefix, const char *basename, uint64_t base_
             case SugarType:
             case PointerType:
             {
-                std::cout << (*ty) <<"\n";
+                if (debug) {
+                    std::cout << (*ty) <<"\n";
+                }
                 type_map[basename][cu][off] = new RefTypeInfo(
                         tag, (*ty)["name"].asString(), sizeof(target_ulong),
                         (*ty)["ref"].asUInt64(), basename, cu);
@@ -1815,9 +1817,7 @@ bool populate_line_range_list(const char *dbg_prefix, const char *basename, uint
                         lr["lno"].asUInt(), srcfn, lr["func"].asUInt64(), lr["col"].asUInt());
                 line_range_list.push_back(r);
             }
-
             if (debug) {
-                printf("Line Range added to the list\n");
                 std::cout << lr << "\n";
             }
         }
@@ -1825,10 +1825,9 @@ bool populate_line_range_list(const char *dbg_prefix, const char *basename, uint
     return true;
 }
 
-// Load all function and globar variable info
+// Load all function and global variable info
 bool load_debug_info(const char *dbg_prefix, const char *basename, uint64_t base_address, bool needs_reloc) {
     populate_line_range_list(dbg_prefix, basename, base_address, needs_reloc);
-    printf ("line_range_list.size() = %d\n", (int) line_range_list.size());
 
     load_func_info(dbg_prefix, basename, base_address, needs_reloc);
     load_glob_vars(dbg_prefix, basename, base_address, needs_reloc);
@@ -1927,7 +1926,7 @@ bool main_exec_initialized = false;
 bool ensure_main_exec_initialized(CPUState *cpu) {
     char fname[260] = {};
     OsiProc * p = get_current_process(cpu);
-    printf("[ensure_main_exec_initialized] looking at libraries from the following program %s\n", p->name);
+    dprintf("[ensure_main_exec_initialized] looking at libraries from the following program %s\n", p->name);
     if (strncmp(p->name, proc_to_monitor, strlen(p->name)) != 0) {
         dprintf("[ensure_main_exec_initialized] Incorrect process to get mappings for: %s\n", p->name);
         return false;
@@ -1954,21 +1953,21 @@ bool ensure_main_exec_initialized(CPUState *cpu) {
             continue;
         }
         strcpy(fname, bin_path.c_str());
-        printf("[ensure_main_exec_initialized] Trying to load symbols for %s at 0x" TARGET_FMT_lx ".\n", fname, m->base);
-        printf("[ensure_main_exec_initialized] access(%s, F_OK): %x\n", fname, access(fname, F_OK));
+        dprintf("[ensure_main_exec_initialized] Trying to load symbols for %s at 0x" TARGET_FMT_lx ".\n", fname, m->base);
+        dprintf("[ensure_main_exec_initialized] access(%s, F_OK): %x\n", fname, access(fname, F_OK));
         if (access(fname, F_OK) == -1) {
             fprintf(stderr, "Couldn't open %s; will not load symbols for it.\n", fname);
             continue;
         }
         active_libs.push_back(Lib(fname, m->base, m->base + m->size));
         uint64_t elf_base = elf_get_baseaddr(fname, m->name, m->base);
-        printf("[ensure_main_exec_initialized] Value of elf base address: 0x%lx\n", (unsigned long) elf_base);
+        dprintf("[ensure_main_exec_initialized] Value of elf base address: 0x%lx\n", (unsigned long) elf_base);
         bool needs_reloc = elf_base != m->base;
         if (!read_debug_info(fname, m->name, m->base, needs_reloc)) {
             fprintf(stderr, "[ensure_main_exec_initialized] Couldn't load symbols from %s.\n", fname);
             continue;
         }
-        printf("[ensure_main_exec_initialized] SUCCESS\n");
+        printf("[ensure_main_exec_initialized] SUCCESS IN FINDING MAIN FUNCTION, LOADING DEBUG SYMBOLS\n");
         return true;
     }
     return false;
@@ -2451,7 +2450,7 @@ void handle_asid_change(CPUState *cpu, target_ulong asid, OsiProc *p) {
     if (strncmp(p->name, proc_to_monitor, strlen(p->name)) == 0) {
         target_ulong current_asid = panda_current_asid(cpu);
         monitored_asid.insert(current_asid);
-        printf("monitoring asid " TARGET_FMT_lx "\n", current_asid);
+        dprintf("monitoring asid " TARGET_FMT_lx "\n", current_asid);
     }
 }
 // XXX: osi_foo is largetly commented out and basically does nothing
