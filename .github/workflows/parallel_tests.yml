@@ -23,6 +23,11 @@ on:
   #  otherwise we could speed this up by pulling the last container of 'dev', copying
   #  code into it, and then rebuilding
 
+# Automatically cancel any previous workflow on a new push.
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}-${{ github.event_name }}
+  cancel-in-progress: true
+
 jobs:
   lint:
     runs-on: panda-arc
